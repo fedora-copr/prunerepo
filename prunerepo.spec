@@ -2,6 +2,7 @@ Name:    {{{ git_name name=prunerepo }}}
 Version: {{{ git_version lead=1 }}}
 Summary: Remove old packages from rpm-md repository
 Release: 1%{?dist}
+Url: https://pagure.io/prunerepo
 
 # Source is created by:
 # git clone https://pagure.io/copr/copr.git
