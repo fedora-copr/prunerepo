@@ -66,7 +66,20 @@ install -p -m 644 man/prunerepo.1 %{buildroot}/%{_mandir}/man1/
 %{_mandir}/man1/prunerepo.1*
 
 %changelog
-{{{ git_changelog since_tag=prunerepo-1.12-1 }}}
+{{{ git_changelog since_tag=prunerepo-1.15-1 }}}
+
+* Fri Oct 19 2018 Miroslav Suchý <msuchy@redhat.com> 1.14-1
+- /usr/bin/env python3 -> /usr/bin/python3
+- use git_dir_archive instead of git_dir_pack
+- fix test non-determinism
+
+* Sat Aug 18 2018 clime <clime@redhat.com> 1.13-1
+- keep all the latest NEVRAS on disk since dnf3
+
+* Mon Aug 06 2018 clime <clime@redhat.com> 1.12-1
+- fix reading spec file values from setup.py
+- rpkg deployment into COPR
+- use builtin cd in tests
 
 * Wed Jan 24 2018 clime <clime@redhat.com> 1.11-1
 - do not recreate repo if there was no change in data unless
