@@ -6,7 +6,7 @@ Url: https://pagure.io/prunerepo
 
 # Source is created by:
 # git clone https://pagure.io/copr/copr.git
-# git checkout {{{ cached_git_name_version }}}
+# git checkout {{{ echo -n "${OUTPUT[git_name]}-${OUTPUT[git_version]}" }}}-1
 # cd copr/prunerepo
 # rpkg spec --sources
 Source0: {{{ git_dir_archive }}}
