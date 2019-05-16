@@ -43,7 +43,7 @@ After deletion of obsoleted packages, the command
 to recreate the repository metadata.
 
 %prep
-%setup -q
+{{{ git_dir_setup_macro }}}
 
 %check
 tests/run.sh
