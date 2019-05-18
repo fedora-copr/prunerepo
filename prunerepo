@@ -26,10 +26,14 @@ parser.add_argument('--verbose', action='store_true',
                    help='print all deleted items to stdout')
 parser.add_argument('--quiet', action='store_true',
                    help='do not print any info messages, just do your job')
+parser.add_argument('--dry-run', action='store_true',
+                    help='do not remove anything from the repository and print the actions instead')
 parser.add_argument('-v', '--version', action='version', version='1.5',
                    help='print program version and exit')
 
 args = parser.parse_args()
+if args.dry_run:
+    args.verbose = True
 
 
 get_all_packages_cmd = [
@@ -55,6 +59,8 @@ def rm_file(path):
     """
     if args.verbose:
         log_info("Removing: "+path)
+    if args.dry_run:
+        return
     if os.path.exists(path) and os.path.isfile(path):
         os.remove(path)
 
@@ -64,12 +70,14 @@ def log_info(msg):
         print(msg)
 
 
-def run_cmd(cmd, silent=False):
+def run_cmd(cmd, silent=False, dry_run=False):
     """
     Run given command in a subprocess
     """
     if not silent:
         log_info("Executing: "+' '.join(cmd))
+    if dry_run:
+        return
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     (stdout, stderr) = process.communicate()
     if process.returncode != 0:
@@ -102,12 +110,18 @@ def rm_srpm(rpm):
     If there is matching srpm in the same directory as given rpm (described by its absolute path), delete it
     """
     get_srpm_cmd = get_all_packages_cmd + [ '--srpm', os.path.splitext(os.path.basename(rpm))[0] ]
-    try:
-        srpm_name = os.path.basename(run_cmd(get_srpm_cmd, silent=True)[0])
-        rm_file(os.path.abspath(os.path.join(os.path.dirname(rpm), srpm_name)))
-    except IndexError:
-        # no srpm found, just skip it
-        pass
+    output = run_cmd(get_srpm_cmd, silent=True)
+    if not output:
+        return
+
+    srpm_name = os.path.basename(output[0])
+    srpm_path = os.path.abspath(os.path.join(os.path.dirname(rpm), srpm_name))
+
+    if args.verbose:
+        log_info("Removing: " + srpm_path)
+    if args.dry_run:
+        return
+    rm_file(srpm_path)
 
 
 def prune_packages():
@@ -134,7 +148,7 @@ def recreate_repo():
     log_info("Recreating repository...")
     createrepo_cmd = ['/usr/bin/createrepo_c', '--database', '--update', '--local-sqlite',
                       '--cachedir', '/tmp/', '--workers', '8'] + [ args.path ]
-    return run_cmd(createrepo_cmd)
+    return run_cmd(createrepo_cmd, dry_run=args.dry_run)
 
 
 def clean_copr():
