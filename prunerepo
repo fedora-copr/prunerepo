@@ -84,7 +84,7 @@ def run_cmd(cmd, silent=False, dry_run=False):
     print(stderr.decode(encoding='utf-8'), file=sys.stderr)
     if process.returncode != 0:
         sys.exit(1)
-    return stdout.decode(encoding='utf-8').split()
+    return stdout.decode(encoding='utf-8').splitlines()
 
 
 def get_package_build_time(package_path):
