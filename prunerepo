@@ -132,6 +132,9 @@ def prune_packages():
     log_info('Removing obsoleted packages...')
     was_deletion = False
     latest_rpms = get_rpms(get_latest_packages_cmd)
+    if not latest_rpms:
+        log_info("No RPMs available")
+        return was_deletion
     all_rpms = get_rpms(get_all_packages_cmd)
     to_remove_rpms = set(all_rpms) - set(latest_rpms)
     for rpm in to_remove_rpms:
