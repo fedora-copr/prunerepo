@@ -159,6 +159,7 @@ def clean_copr():
     """
     Remove whole copr build dirs if they no longer contain a srpm/rpm file
     """
+    log_info("This feature is deprecated and will be removed in a future release. Please, use a custom solution instead.")
     log_info("Cleaning COPR repository...")
     for dir_name in os.listdir(args.path):
         dir_path = os.path.abspath(os.path.join(args.path, dir_name))
