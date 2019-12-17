@@ -66,7 +66,10 @@ install -p -m 644 man/prunerepo.1 %{buildroot}/%{_mandir}/man1/
 %{_mandir}/man1/prunerepo.1*
 
 %changelog
-{{{ git_changelog since_tag=prunerepo-1.15-1 }}}
+{{{ git_changelog since_tag=prunerepo-1.16-1 }}}
+
+* Mon Apr 01 2019 clime <clime7@gmail.com> 1.15-1
+- fix changelog
 
 * Fri Oct 19 2018 Miroslav Suchý <msuchy@redhat.com> 1.14-1
 - /usr/bin/env python3 -> /usr/bin/python3
