@@ -9,7 +9,7 @@ function runcmd {
 }
 
 function listpkgsbyrepo {
-	dnf repoquery --repofrompath=test_prunerepo,$testrepo --repo=test_prunerepo --refresh --quiet --queryformat '%{location}' | sort
+	dnf repoquery --repofrompath=test_prunerepo,$testrepo --repo=test_prunerepo --refresh --quiet --queryformat '%{location}' --setopt='skip_if_unavailable=False' | sort
 }
 
 function listpkgsbyfs {
