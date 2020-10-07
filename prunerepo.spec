@@ -15,6 +15,7 @@ License: GPLv2+
 BuildArch: noarch
 BuildRequires: bash
 BuildRequires: python3-devel
+BuildRequires: python3-setuptools
 BuildRequires: rpm-python3
 BuildRequires: createrepo_c
 BuildRequires: asciidoc
