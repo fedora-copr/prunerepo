@@ -1,15 +1,13 @@
-Name:    {{{ git_name name=prunerepo }}}
-Version: {{{ git_version lead=1 }}}
+Name:    prunerepo
+Version: 1.17
 Summary: Remove old packages from rpm-md repository
 Release: 1%{?dist}
 Url: https://pagure.io/prunerepo
 
 # Source is created by:
-# git clone https://pagure.io/copr/copr.git
-# git checkout {{{ echo -n "${OUTPUT[git_name]}-${OUTPUT[git_version]}" }}}-1
-# cd copr/prunerepo
-# rpkg spec --sources
-Source0: {{{ git_dir_archive }}}
+# git clone %%url && cd prunerepo
+# tito build --tgz --tag %%name-%%version-%%release
+Source0: %name-%version.tar.gz
 
 License: GPLv2+
 BuildArch: noarch
@@ -44,7 +42,7 @@ After deletion of obsoleted packages, the command
 to recreate the repository metadata.
 
 %prep
-{{{ git_dir_setup_macro }}}
+%setup -q
 
 %check
 tests/run.sh
@@ -67,7 +65,17 @@ install -p -m 644 man/prunerepo.1 %{buildroot}/%{_mandir}/man1/
 %{_mandir}/man1/prunerepo.1*
 
 %changelog
-{{{ git_changelog since_tag=prunerepo-1.16-1 }}}
+* Tue Dec 17 2019 clime <michal.novotny@comprimato.com> 1.17-1
+- fix changelog
+
+* Mon Dec 16 2019 clime <clime@fedoraproject.org> 1.16-1
+- deprecate --copr
+- avoid additional newlines in stderr
+- skip prunerepo if set(latest_rpms) is empty
+- Use splitlines instead of split for repoquery parsing
+- Set skip_if_unavailable=False to not loose the data
+- Always dump stderr of repoquery (not only in error case)
+- Drop useless double-quote in --queryformat
 
 * Mon Apr 01 2019 clime <clime7@gmail.com> 1.15-1
 - fix changelog
