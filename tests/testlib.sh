@@ -1,11 +1,12 @@
 export libdir="$(builtin cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"
+export PYTHONPATH="$libdir/../"
 
 die() {
 	echo "fail."; exit 1; 
 }
 
 function runcmd {
-	bash -c "set -x; $libdir/../prunerepo --verbose $*;" 
+	python3 "$libdir/../prunerepo/main.py" "$@" --log-level "DEBUG"
 }
 
 function listpkgsbyrepo {

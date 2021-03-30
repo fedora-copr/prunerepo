@@ -2,81 +2,35 @@
 
 import subprocess
 import sys
-import argparse
 import os
 import re
 import time
 import shutil
+import logging
 
-parser = argparse.ArgumentParser(description='Remove old packages from rpm-md repository')
-
-parser.add_argument('path', action='store',
-                   help='local path to a yum repository')
-parser.add_argument('--days', type=int, action='store', default=0,
-                   help='only remove packages (and build directories when --cleancopr is used)\
-                   that are DAYS old or older (for packages by their build date, for directories\
-                   the last modification time is considered')
-parser.add_argument('--cleancopr', action='store_true',
-                   help='additionaly remove whole copr build dirs and logs if the associated package gets deleted')
-parser.add_argument('--alwayscreaterepo', action='store_true',
-                   help='Recreate repository even when there was no change in data.')
-parser.add_argument('--nocreaterepo', action='store_true',
-                   help='repository is not automatically recreated (not even after data deletion). Supresses --alwayscreaterepo.')
-parser.add_argument('--verbose', action='store_true',
-                   help='print all deleted items to stdout')
-parser.add_argument('--quiet', action='store_true',
-                   help='do not print any info messages, just do your job')
-parser.add_argument('--dry-run', action='store_true',
-                    help='do not remove anything from the repository and print the actions instead')
-parser.add_argument('-v', '--version', action='version', version='1.5',
-                   help='print program version and exit')
-
-args = parser.parse_args()
-if args.dry_run:
-    args.verbose = True
-
-
-get_all_packages_cmd = [
-    'dnf',
-    'repoquery',
-    '--repofrompath=prunerepo_query,'+os.path.abspath(args.path),
-    '--repo=prunerepo_query',
-    '--refresh',
-    '--queryformat=%{location}',
-    '--quiet',
-    '--setopt=skip_if_unavailable=False',
-]
-
-get_latest_packages_cmd = get_all_packages_cmd + [ '--latest-limit=1' ]
+log = logging.getLogger(__name__)
 
 
 def is_srpm(package):
     return package.endswith(".src.rpm")
 
 
-def rm_file(path):
+def rm_file(path, dry_run):
     """
     Remove file given its absolute path
     """
-    if args.verbose:
-        log_info("Removing: "+path)
-    if args.dry_run:
+    log.info("Removing: " + path)
+    if dry_run:
         return
     if os.path.exists(path) and os.path.isfile(path):
         os.remove(path)
 
 
-def log_info(msg):
-    if not args.quiet:
-        print(msg)
-
-
-def run_cmd(cmd, silent=False, dry_run=False):
+def run_cmd(cmd, dry_run):
     """
     Run given command in a subprocess
     """
-    if not silent:
-        log_info("Executing: "+' '.join(cmd))
+    log.debug("Executing: " + ' '.join(cmd))
     if dry_run:
         return
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -87,82 +41,76 @@ def run_cmd(cmd, silent=False, dry_run=False):
     return stdout.decode(encoding='utf-8').splitlines()
 
 
-def get_package_build_time(package_path):
+def get_package_build_time(package_path, dry_run):
     """
     Get build time by reading package metadata
     """
-    query_cmd = ['/usr/bin/rpm', '-qp', '--queryformat', '%{BUILDTIME}'] + [ package_path ]
-    stdout = run_cmd(query_cmd, silent=True)
+    query_cmd = ["/usr/bin/rpm", "-qp", "--queryformat", "%{BUILDTIME}"] + [package_path]
+    stdout = run_cmd(query_cmd, dry_run)
     return int(stdout[0])
 
 
-def get_rpms(repoquery_cmd):
+def get_rpms(repoquery_cmd, path, dry_run):
     """
     Get paths to rpm packages in the repository according to given repoquery_cmd
     """
-    stdout = run_cmd(repoquery_cmd) # returns srpms as well
+    stdout = run_cmd(repoquery_cmd, dry_run)  # returns srpms as well
     rel_rpms_paths = [relpath for relpath in stdout if not is_srpm(relpath)]
-    abs_rpms_paths = [os.path.abspath(os.path.join(args.path, relpath)) for relpath in rel_rpms_paths]
+    abs_rpms_paths = [os.path.abspath(os.path.join(path, relpath)) for relpath in rel_rpms_paths]
     return abs_rpms_paths
 
 
-def rm_srpm(rpm):
+def get_srpm(rpm, get_all_packages_cmd, dry_run):
     """
-    If there is matching srpm in the same directory as given rpm (described by its absolute path), delete it
+    Get matching srpm in the same directory as given rpm (described by its absolute path)
     """
-    get_srpm_cmd = get_all_packages_cmd + [ '--srpm', os.path.splitext(os.path.basename(rpm))[0] ]
-    output = run_cmd(get_srpm_cmd, silent=True)
+    get_srpm_cmd = get_all_packages_cmd + ["--srpm", os.path.splitext(os.path.basename(rpm))[0]]
+    output = run_cmd(get_srpm_cmd, dry_run)
     if not output:
         return
 
     srpm_name = os.path.basename(output[0])
     srpm_path = os.path.abspath(os.path.join(os.path.dirname(rpm), srpm_name))
-
-    if args.verbose:
-        log_info("Removing: " + srpm_path)
-    if args.dry_run:
-        return
-    rm_file(srpm_path)
+    return srpm_path
 
 
-def prune_packages():
+def prune_packages(path, days, log_level, dry_run):
     """
     Remove obsoleted packages
     """
-    log_info('Removing obsoleted packages...')
+    if not set_logging_level(log_level):
+        sys.exit(1)
+    log.debug('Removing obsoleted packages...')
+    rpms = get_rpms_to_remove(path, log_level, days)
     was_deletion = False
-    latest_rpms = get_rpms(get_latest_packages_cmd)
-    if not latest_rpms:
-        log_info("No RPMs available")
+    if not rpms:
+        log.error("No RPMs available")
         return was_deletion
-    all_rpms = get_rpms(get_all_packages_cmd)
-    to_remove_rpms = set(all_rpms) - set(latest_rpms)
-    for rpm in to_remove_rpms:
-        if time.time() - get_package_build_time(rpm) > args.days * 24 * 3600:
-            rm_srpm(rpm)
-            rm_file(rpm)
-            was_deletion = True
+    for rpm in rpms:
+        rm_file(rpm, dry_run)
+        was_deletion = True
     return was_deletion
 
 
-def recreate_repo():
+def recreate_repo(path, dry_run):
     """
     Recreate the repository by using createrepo_c
     """
-    log_info("Recreating repository...")
+    log.debug("Recreating repository...")
     createrepo_cmd = ['/usr/bin/createrepo_c', '--database', '--update', '--local-sqlite',
-                      '--cachedir', '/tmp/', '--workers', '8'] + [ args.path ]
-    return run_cmd(createrepo_cmd, dry_run=args.dry_run)
+                      '--cachedir', '/tmp/', '--workers', '8'] + [path]
+    return run_cmd(createrepo_cmd, dry_run)
 
 
-def clean_copr():
+def clean_copr(path, days, dry_run):
     """
     Remove whole copr build dirs if they no longer contain a srpm/rpm file
     """
-    log_info("This feature is deprecated and will be removed in a future release. Please, use a custom solution instead.")
-    log_info("Cleaning COPR repository...")
-    for dir_name in os.listdir(args.path):
-        dir_path = os.path.abspath(os.path.join(args.path, dir_name))
+    log.info("This feature is deprecated and will be removed in a future release. "
+             "Please, use a custom solution instead.")
+    log.info("Cleaning COPR repository...")
+    for dir_name in os.listdir(path):
+        dir_path = os.path.abspath(os.path.join(path, dir_name))
 
         if not os.path.isdir(dir_path):
             continue
@@ -170,25 +118,73 @@ def clean_copr():
             continue
         if [item for item in os.listdir(dir_path) if re.match(r'.*\.rpm$', item)]:
             continue
-        if time.time() - os.stat(dir_path).st_mtime <= args.days * 24 * 3600:
+        if time.time() - os.stat(dir_path).st_mtime <= days * 24 * 3600:
             continue
 
-        if args.verbose:
-            log_info('Removing: '+dir_path)
+        log.info('Removing: ' + dir_path)
         shutil.rmtree(dir_path)
 
         # also remove the associated log in the main dir
         build_id = os.path.basename(dir_path).split('-')[0]
         buildlog_name = 'build-' + build_id + '.log'
-        buildlog_path = os.path.abspath(os.path.join(args.path, buildlog_name))
-        rm_file(os.path.join(args.path, buildlog_path))
+        buildlog_path = os.path.abspath(os.path.join(path, buildlog_name))
+        rm_file(os.path.join(path, buildlog_path), dry_run)
 
 
-if __name__ == '__main__':
-    was_deletion = prune_packages()
-    if (was_deletion or args.alwayscreaterepo) \
-            and not args.nocreaterepo:
-        recreate_repo()
+def set_logging_level(log_level):
+    """
+    Set logging level
+    """
+    handler = logging.StreamHandler(stream=sys.stderr)
+    handler.setFormatter(logging.Formatter("%(message)s"))
+    try:
+        handler.setLevel(log_level.upper())
+        log.addHandler(handler)
+        log.setLevel(handler.level)
+        return True
+    except ValueError as error:
+        print(str(error), file=sys.stderr)
+    except TypeError as error:
+        print(str(error), file=sys.stderr)
+    return False
 
-    if args.cleancopr:
-        clean_copr()
+
+def get_rpms_to_remove(directory, log_level='INFO', days=0):
+    """
+    Returns a list of (s)rpm path names that should be removed.
+    0 days means that (s)rpm will be removed regardless of when the package was built.
+
+    :param directory: local path to a yum repository
+    :param log_level: set logging to desired level (error, info or debug)
+    :param days: how old are the packages to be removed, in the number of days
+    :return: a list of (s)RPM path names that should be removed
+    """
+    get_all_packages_cmd = [
+        "dnf",
+        "repoquery",
+        "--repofrompath=prunerepo_query," + os.path.abspath(directory),
+        "--repo=prunerepo_query",
+        "--refresh",
+        "--queryformat=%{location}",
+        "--quiet",
+        "--setopt=skip_if_unavailable=False",
+    ]
+    if not log.handlers:
+        if not set_logging_level(log_level):
+            return []
+    log.info("Checking '%s' directory for removal candidates older than %s days" % (os.path.abspath(directory), days))
+    get_latest_packages_cmd = get_all_packages_cmd + ['--latest-limit=1']
+    latest_rpms = get_rpms(get_latest_packages_cmd, directory, dry_run=False)
+    if not latest_rpms:
+        return []
+    all_rpms = get_rpms(get_all_packages_cmd, directory, dry_run=False)
+    to_remove_rpms = set(all_rpms) - set(latest_rpms)
+    rpm_list = []
+    for rpm in to_remove_rpms:
+        log.debug("Checking age of the '%s' file" % os.path.split(rpm)[1])
+        if time.time() - get_package_build_time(rpm, dry_run=False) > days * 24 * 3600:
+            srpm = get_srpm(rpm, get_all_packages_cmd, dry_run=False)
+            if srpm:
+                rpm_list.append(srpm)
+            rpm_list.append(rpm)
+    return rpm_list

@@ -14,7 +14,7 @@ BuildArch: noarch
 BuildRequires: bash
 BuildRequires: python3-devel
 BuildRequires: python3-setuptools
-BuildRequires: rpm-python3
+BuildRequires: python3-rpm
 BuildRequires: createrepo_c
 BuildRequires: asciidoc
 BuildRequires: findutils
@@ -23,7 +23,7 @@ BuildRequires: dnf-plugins-core
 BuildRequires: coreutils
 Requires: createrepo_c
 Requires: dnf-plugins-core
-Requires: rpm-python3
+Requires: python3-rpm
 Requires: python3
 
 %description

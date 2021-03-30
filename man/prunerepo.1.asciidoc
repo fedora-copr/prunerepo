@@ -8,7 +8,7 @@ prunerepo - remove old packages from rpm-md repository
 
 SYNOPSIS
 --------
-prunerepo [--days DAYS] [--cleancopr] [--nocreaterepo] [--verbose] [-h] [-v] path
+prunerepo [--days DAYS] [--cleancopr] [--nocreaterepo] [--log-level LOG_LEVEL] [--dry-run] [-h] [-v] path
 
 
 DESCRIPTION
@@ -37,20 +37,23 @@ path::
 OPTIONS
 -------
 --days DAYS::
-    only remove packages that are DAYS old or older by their build date. This option also affects subsequent deletion of build directories with no rpm or srpm inside when --cleancopr is used.
-    These directories are deleted only if their latest modification time is more than DAYS in past.
+    only remove packages (and build directories when --cleancopr is used) that are DAYS old or older
+    (for packages by their build date, for directories the last modification time is considered)
 
 --cleancopr::
-	additionally remove whole copr build dirs (contain 'build.info' file) and logs if the associated package gets deleted
+	additionally remove whole copr build dirs and logs if the associated package gets deleted
+
+--alwayscreaterepo::
+    Recreate repository even when there was no change in data
 
 --nocreaterepo::
-	repository is not automatically recreated after deletion
+	repository is not automatically recreated (not even after data deletion). Supresses --alwayscreaterepo.
 
---verbose::
-	print all deleted items to stdout
+--log-level::
+	set logging to desired level
 
---verbose::
-	do not print any info messages, just do your job
+--dry-run::
+    do not remove anything from the repository and print the actions instead. Verbose mode will be set.
 
 -h, --help::
 	show this help message and exit

@@ -2,7 +2,7 @@
 
 import os
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name=os.getenv('name'),
@@ -17,6 +17,10 @@ setup(
         "Programming Language :: Python :: 3",
         "Topic :: Software Development :: Build Tools",
     ],
-    scripts=['prunerepo'],
+    entry_points={
+        'console_scripts': [
+            'prunerepo=prunerepo.main:main'],
+    },
     include_package_data=True,
+    packages=find_packages(),
 )
