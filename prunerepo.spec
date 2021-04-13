@@ -1,5 +1,5 @@
 Name:    prunerepo
-Version: 1.17
+Version: 1.18
 Summary: Remove old packages from rpm-md repository
 Release: 1%{?dist}
 Url: https://pagure.io/prunerepo
@@ -65,6 +65,9 @@ install -p -m 644 man/prunerepo.1 %{buildroot}/%{_mandir}/man1/
 %{_mandir}/man1/prunerepo.1*
 
 %changelog
+* Sat Feb 29 2020 clime <clime@fedoraproject.org> 1.18-1
+- add --setopt='skip_if_unavailable=False' to listpkgsbyrepo in testlib
+
 * Tue Dec 17 2019 clime <michal.novotny@comprimato.com> 1.17-1
 - fix changelog
 
