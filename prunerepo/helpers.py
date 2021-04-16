@@ -8,6 +8,8 @@ import time
 import shutil
 import logging
 
+from prunerepo.pair_srpm_rpm import RPMToSRPMPairs
+
 log = logging.getLogger(__name__)
 
 
@@ -58,20 +60,6 @@ def get_rpms(repoquery_cmd, path, dry_run):
     rel_rpms_paths = [relpath for relpath in stdout if not is_srpm(relpath)]
     abs_rpms_paths = [os.path.abspath(os.path.join(path, relpath)) for relpath in rel_rpms_paths]
     return abs_rpms_paths
-
-
-def get_srpm(rpm, get_all_packages_cmd, dry_run):
-    """
-    Get matching srpm in the same directory as given rpm (described by its absolute path)
-    """
-    get_srpm_cmd = get_all_packages_cmd + ["--srpm", os.path.splitext(os.path.basename(rpm))[0]]
-    output = run_cmd(get_srpm_cmd, dry_run)
-    if not output:
-        return
-
-    srpm_name = os.path.basename(output[0])
-    srpm_path = os.path.abspath(os.path.join(os.path.dirname(rpm), srpm_name))
-    return srpm_path
 
 
 def prune_packages(path, days, log_level, dry_run):
@@ -178,13 +166,22 @@ def get_rpms_to_remove(directory, log_level='INFO', days=0):
     if not latest_rpms:
         return []
     all_rpms = get_rpms(get_all_packages_cmd, directory, dry_run=False)
+
+    repodir = os.path.abspath(directory)
+    pair_lookup = RPMToSRPMPairs(repodir, log)
+
     to_remove_rpms = set(all_rpms) - set(latest_rpms)
     rpm_list = []
     for rpm in to_remove_rpms:
         log.debug("Checking age of the '%s' file" % os.path.split(rpm)[1])
-        if time.time() - get_package_build_time(rpm, dry_run=False) > days * 24 * 3600:
-            srpm = get_srpm(rpm, get_all_packages_cmd, dry_run=False)
-            if srpm:
-                rpm_list.append(srpm)
-            rpm_list.append(rpm)
+        if time.time() - get_package_build_time(rpm, dry_run=False) < days * 24 * 3600:
+            continue
+        rpm_list.append(rpm)
+
+        rel_rpm = os.path.normpath(os.path.relpath(rpm, repodir))
+        rel_srpm = pair_lookup.srpm_to_be_removed_for_rpm(rel_rpm)
+        if not rel_srpm:
+            continue
+        rpm_list.append(os.path.join(repodir, rel_srpm))
+
     return rpm_list
