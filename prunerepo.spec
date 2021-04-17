@@ -1,7 +1,7 @@
 Name:    prunerepo
 Version: 1.18
 Summary: Remove old packages from rpm-md repository
-Release: 1%{?dist}
+Release: 5%{?dist}
 Url: https://pagure.io/prunerepo
 
 # Source is created by:
