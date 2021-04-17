@@ -2,7 +2,12 @@
 
 import argparse
 
-from prunerepo.helpers import prune_packages, recreate_repo, clean_copr
+from prunerepo.helpers import (
+        prune_packages,
+        recreate_repo,
+        clean_copr,
+        get_logger,
+)
 
 
 def get_parser():
@@ -36,12 +41,14 @@ def get_parser():
 
 def main():
     args = get_parser()
-    was_deletion = prune_packages(args.path, args.days, args.log_level, args.dry_run)
+    log = get_logger(args.log_level)
+
+    was_deletion = prune_packages(args.path, args.days, args.dry_run, log)
     if (was_deletion or args.alwayscreaterepo) and not args.nocreaterepo:
-        recreate_repo(args.path, args.dry_run)
+        recreate_repo(args.path, args.dry_run, log)
 
     if args.cleancopr:
-        clean_copr(args.path, args.days, args.dry_run)
+        clean_copr(args.path, args.days, args.dry_run, log)
 
 
 if __name__ == "__main__":
