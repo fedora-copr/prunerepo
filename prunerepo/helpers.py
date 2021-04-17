@@ -1,5 +1,10 @@
 #!/usr/bin/python3
 
+"""
+Set of helper methods for the /usr/bin/prunerepo command.  These methods are not
+supposed to be library calls so please never import anything from this file.
+"""
+
 import subprocess
 import sys
 import os
@@ -12,6 +17,7 @@ from prunerepo.pair_srpm_rpm import RPMToSRPMPairs
 
 
 def is_srpm(package):
+    """ Check if the PACKAGE string ends with src.rpm """
     return package.endswith(".src.rpm")
 
 
