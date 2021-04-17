@@ -77,7 +77,8 @@ def prune_packages(path, days, dry_run, log):
         log.error("No RPMs available")
         return was_deletion
     for rpm in rpms:
-        rm_file(rpm, dry_run, log)
+        remove = os.path.abspath(os.path.join(path, rpm))
+        rm_file(remove, dry_run, log)
         was_deletion = True
     return was_deletion
 
@@ -182,12 +183,12 @@ def get_rpms_to_remove(directory, days=0, log=None):
         log.debug("Checking age of the '%s' file", os.path.split(rpm)[1])
         if time.time() - get_package_build_time(rpm, log) < days * 24 * 3600:
             continue
-        rpm_list.append(rpm)
-
         rel_rpm = os.path.normpath(os.path.relpath(rpm, repodir))
+        rpm_list.append(rel_rpm)
+
         rel_srpm = pair_lookup.srpm_to_be_removed_for_rpm(rel_rpm)
         if not rel_srpm:
             continue
-        rpm_list.append(os.path.join(repodir, rel_srpm))
+        rpm_list.append(rel_srpm)
 
     return rpm_list

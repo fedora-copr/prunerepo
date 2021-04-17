@@ -106,7 +106,11 @@ def get_mapping(repo, log):
 
 
 class RPMToSRPMPairs:  # pylint: disable=too-few-public-methods
-    """ Search/query MAP of SRPM => RPMS and RPM => SRPM objects. """
+    """
+    Search/query MAP of SRPM => RPMS and RPM => SRPM objects.
+    The paths we work with, and return are relative to the "repo" directory we
+    get in the constructor.
+    """
 
     def __init__(self, repo, log):
         self.log = log
