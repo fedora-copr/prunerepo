@@ -16,6 +16,10 @@ import logging
 from prunerepo.pair_srpm_rpm import RPMToSRPMPairs
 
 
+class PrunerepoException(Exception):
+    """ Returned upon failure """
+
+
 def is_srpm(package):
     """ Check if the PACKAGE string ends with src.rpm """
     return package.endswith(".src.rpm")
@@ -36,14 +40,15 @@ def run_cmd(cmd, log, dry_run=False):
     """
     Run given command in a subprocess
     """
-    log.debug("Executing: " + ' '.join(cmd))
+    str_cmd = ' '.join(cmd)
+    log.debug("Executing: %s", str_cmd)
     if dry_run:
         return []
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     (stdout, stderr) = process.communicate()
     sys.stderr.write(stderr.decode(encoding='utf-8'))
     if process.returncode != 0:
-        sys.exit(1)
+        raise PrunerepoException("Command {} failed".format(str_cmd))
     return stdout.decode(encoding='utf-8').splitlines()
 
 
@@ -149,6 +154,8 @@ def get_rpms_to_remove(directory, days=0, log=None):
     :param days: how old are the packages to be removed, in the number of days
     :param log: logger to use, if not specified an INFO stderr logger is created
     :return: a list of (s)RPM path names that should be removed
+    :raises PrunerepoException: Upon any failure that could provide bad results
+        causing unwanted RPM removals.
     """
     get_all_packages_cmd = [
         "dnf",

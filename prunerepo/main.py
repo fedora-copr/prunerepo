@@ -9,6 +9,7 @@ from prunerepo.helpers import (
         recreate_repo,
         clean_copr,
         get_logger,
+        PrunerepoException,
 )
 
 
@@ -56,12 +57,15 @@ def main():
     args = _get_parser()
     log = get_logger(args.log_level)
 
-    was_deletion = prune_packages(args.path, args.days, args.dry_run, log)
-    if (was_deletion or args.alwayscreaterepo) and not args.nocreaterepo:
-        recreate_repo(args.path, args.dry_run, log)
+    try:
+        was_deletion = prune_packages(args.path, args.days, args.dry_run, log)
+        if (was_deletion or args.alwayscreaterepo) and not args.nocreaterepo:
+            recreate_repo(args.path, args.dry_run, log)
 
-    if args.cleancopr:
-        clean_copr(args.path, args.days, args.dry_run, log)
+        if args.cleancopr:
+            clean_copr(args.path, args.days, args.dry_run, log)
+    except PrunerepoException as err:
+        log.error("Can not continue: %s", err)
 
 
 if __name__ == "__main__":

@@ -1,3 +1,3 @@
 """ Prunerepo API methods """
 
-from .helpers import get_rpms_to_remove
+from .helpers import get_rpms_to_remove, PrunerepoException
