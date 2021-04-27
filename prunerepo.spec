@@ -1,5 +1,5 @@
 Name:    prunerepo
-Version: 1.19
+Version: 1.20
 Summary: Remove old packages from rpm-md repository
 Release: 1%{?dist}
 Url: https://pagure.io/prunerepo
@@ -65,6 +65,10 @@ install -p -m 644 man/prunerepo.1 %{buildroot}/%{_mandir}/man1/
 %{_mandir}/man1/prunerepo.1*
 
 %changelog
+* Tue Apr 27 2021 Pavel Raiskup <praiskup@redhat.com> 1.20-1
+- Move the stderr output to log
+- Don't sys.exit() from library function
+
 * Mon Apr 19 2021 Silvie Chlupova <schlupov@redhat.com> 1.19-1
 - api: new api method get_rpms_to_remove
 - Enhance the logging mechanism a bit
