@@ -46,7 +46,10 @@ def run_cmd(cmd, log, dry_run=False):
         return []
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     (stdout, stderr) = process.communicate()
-    sys.stderr.write(stderr.decode(encoding='utf-8'))
+    err_output = stderr.decode(encoding='utf-8')
+    if err_output:
+        log.debug("Command error output: %s", err_output)
+
     if process.returncode != 0:
         raise PrunerepoException("Command {} failed".format(str_cmd))
     return stdout.decode(encoding='utf-8').splitlines()
