@@ -10,6 +10,7 @@ https://github.com/praiskup/dnf-hacks/blob/main/find-srpm-to-rpm-pairs.py
 
 import re
 import os
+from contextlib import contextmanager
 
 import dnf
 
@@ -26,9 +27,11 @@ def url_to_repoid(repo_url):
     return repo_url
 
 
-def get_initialized_dnf(repo, log):
+@contextmanager
+def initialized_dnf(repo, log):
     """
-    Return DNF Base object pre-configured to work with the given REPO.
+    Prepare and yield DNF Base object pre-configured to work with the given
+    REPO.  Make sure you run this in `with` context.
     """
     base = dnf.Base()
     base.read_all_repos()
@@ -50,7 +53,10 @@ def get_initialized_dnf(repo, log):
 
     # read the metadata
     base.fill_sack()
-    return base
+    try:
+        yield base
+    finally:
+        base.close()
 
 
 def get_mapping(repo, log):
@@ -59,10 +65,10 @@ def get_mapping(repo, log):
     and map the source RPM name to SRPMs and vice versa.
     """
     # query the metadata
-    base = get_initialized_dnf(repo, log)
-    query = base.sack.query()
-    remote = query.filter(reponame__neq="@System")
-    available_packages = list(remote)
+    with initialized_dnf(repo, log) as base:
+        query = base.sack.query()
+        remote = query.filter(reponame__neq="@System")
+        available_packages = list(remote)
 
     found_srpms = set()
     map_srpm_to_rpms = {}
