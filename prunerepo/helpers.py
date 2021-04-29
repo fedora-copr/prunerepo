@@ -82,7 +82,7 @@ def prune_packages(path, days, dry_run, log):
     rpms = get_rpms_to_remove(path, days, log)
     was_deletion = False
     if not rpms:
-        log.error("No RPMs available")
+        log.error("No outdated RPMs for removal.")
         return was_deletion
     for rpm in rpms:
         remove = os.path.abspath(os.path.join(path, rpm))
