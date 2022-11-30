@@ -9,7 +9,7 @@ Url: https://pagure.io/prunerepo
 # tito build --tgz --tag %%name-%%version-%%release
 Source0: %name-%version.tar.gz
 
-License: GPLv2+
+License: GPL-2.0-or-later
 BuildArch: noarch
 BuildRequires: bash
 BuildRequires: python3-devel
