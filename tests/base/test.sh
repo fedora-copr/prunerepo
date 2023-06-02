@@ -48,7 +48,7 @@ echo "============================ test --days ============================";
 
 setup
 
-oldestbuilddate=`rpm -qp --queryformat '%{BUILDTIME:date}' $testrepo/0-oldestbuild/example-1.0.1-1.fc23.x86_64.rpm 2> /dev/null`
+oldestbuilddate=`LC_ALL=en_US.utf8 rpm -qp --queryformat '%{BUILDTIME:date}' $testrepo/0-oldestbuild/example-1.0.1-1.fc23.x86_64.rpm 2> /dev/null`
 oldestbuilddayback=$(( (`date +'%s'` - `date -d "$oldestbuilddate" +'%s'`)/60/60/24 ))
 
 runcmd --days $oldestbuilddayback .
