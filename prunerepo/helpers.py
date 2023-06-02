@@ -177,7 +177,7 @@ def get_rpms_to_remove(directory, days=0, log=None):
         causing unwanted RPM removals.
     """
     get_all_packages_cmd = [
-        "dnf",
+        "dnf-3",
         "repoquery",
         "--repofrompath=prunerepo_query," + os.path.abspath(directory),
         "--repo=prunerepo_query",

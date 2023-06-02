@@ -10,7 +10,7 @@ function runcmd {
 }
 
 function listpkgsbyrepo {
-	dnf repoquery --repofrompath=test_prunerepo,$testrepo --repo=test_prunerepo --refresh --quiet --location --setopt='skip_if_unavailable=False' | sed 's|file://||' | sort
+	dnf-3 repoquery --repofrompath=test_prunerepo,$testrepo --repo=test_prunerepo --refresh --quiet --location --setopt='skip_if_unavailable=False' | sed 's|file://||' | sort
 }
 
 function listpkgsbyfs {
