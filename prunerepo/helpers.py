@@ -59,7 +59,7 @@ def get_package_build_time(package_path, log):
     """
     Get build time by reading package metadata
     """
-    query_cmd = ["/usr/bin/rpm", "-qp", "--queryformat", "%{BUILDTIME}"] + [package_path]
+    query_cmd = ["/usr/bin/rpm", "-qp", "--nosignature", "--queryformat", "%{BUILDTIME}"] + [package_path]
     stdout = run_cmd(query_cmd, log)
     return int(stdout[0])
 
