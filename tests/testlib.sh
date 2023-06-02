@@ -10,11 +10,11 @@ function runcmd {
 }
 
 function listpkgsbyrepo {
-	dnf repoquery --repofrompath=test_prunerepo,$testrepo --repo=test_prunerepo --refresh --quiet --queryformat '%{location}' --setopt='skip_if_unavailable=False' | sort
+	dnf repoquery --repofrompath=test_prunerepo,$testrepo --repo=test_prunerepo --refresh --quiet --location --setopt='skip_if_unavailable=False' | sed 's|file://||' | sort
 }
 
 function listpkgsbyfs {
-	find . -name '*.rpm' | cut -c 3- | sort
+	find . -name '*.rpm' -exec realpath {} \; | sort
 }
 
 function run {

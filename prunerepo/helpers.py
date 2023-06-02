@@ -64,14 +64,30 @@ def get_package_build_time(package_path, log):
     return int(stdout[0])
 
 
-def get_rpms(repoquery_cmd, path, log):
+def get_rpms(repoquery_cmd, log):
     """
     Get paths to rpm packages in the repository according to given repoquery_cmd
     """
     stdout = run_cmd(repoquery_cmd, log)  # returns srpms as well
-    rel_rpms_paths = [relpath for relpath in stdout if not is_srpm(relpath)]
-    abs_rpms_paths = [os.path.abspath(os.path.join(path, relpath)) for relpath in rel_rpms_paths]
-    return abs_rpms_paths
+
+    # List in a format:
+    # file:///some/path/python3-motionpaint-1.4-1.fc23.noarch.rpm
+    rpm_paths = [path for path in stdout if not is_srpm(path)]
+    abs_rpm_paths = []
+    for path in rpm_paths:
+        prefix = "file://"
+        if not path.startswith(prefix):
+            raise PrunerepoException(
+                f"Repoquery output doesn't start with file:// - {path}"
+            )
+        abs_path = path[len(prefix):]
+        if not abs_path.startswith("/"):
+            raise PrunerepoException(
+                f"Repoquery output doesn't provide absolute path: {path}"
+            )
+        abs_rpm_paths.append(abs_path)
+
+    return abs_rpm_paths
 
 
 def prune_packages(path, days, dry_run, log):
@@ -166,7 +182,7 @@ def get_rpms_to_remove(directory, days=0, log=None):
         "--repofrompath=prunerepo_query," + os.path.abspath(directory),
         "--repo=prunerepo_query",
         "--refresh",
-        "--queryformat=%{location}",
+        "--location",
         "--quiet",
         "--setopt=skip_if_unavailable=False",
     ]
@@ -178,11 +194,11 @@ def get_rpms_to_remove(directory, days=0, log=None):
              os.path.abspath(directory), days)
 
     get_latest_packages_cmd = get_all_packages_cmd + ['--latest-limit=1']
-    latest_rpms = get_rpms(get_latest_packages_cmd, directory, log)
+    latest_rpms = get_rpms(get_latest_packages_cmd, log)
     if not latest_rpms:
         return []
 
-    all_rpms = get_rpms(get_all_packages_cmd, directory, log)
+    all_rpms = get_rpms(get_all_packages_cmd, log)
 
     repodir = os.path.abspath(directory)
     pair_lookup = RPMToSRPMPairs(repodir, log)
