@@ -1,5 +1,5 @@
 Name:    prunerepo
-Version: 1.21
+Version: 1.22
 Summary: Remove old packages from rpm-md repository
 Release: 1%{?dist}
 Url: https://pagure.io/prunerepo
@@ -65,6 +65,10 @@ install -p -m 644 man/prunerepo.1 %{buildroot}/%{_mandir}/man1/
 %{_mandir}/man1/prunerepo.1*
 
 %changelog
+* Mon Jun 05 2023 Pavel Raiskup <praiskup@redhat.com> 1.22-1
+- ajust to the current/future DNF packaging
+- fix for new DNF that doesn't accept %%location in --queryformat
+
 * Fri Apr 30 2021 Pavel Raiskup <praiskup@redhat.com> 1.21-1
 - Don't leak descriptors in Python API call
 - fix misleading /bin/prunerepo message when no rpms are to be removed
