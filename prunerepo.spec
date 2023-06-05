@@ -1,7 +1,7 @@
 Name:    prunerepo
-Version: 1.23
+Version: 1.24
 Summary: Remove old packages from rpm-md repository
-Release: 2%{?dist}
+Release: 1%{?dist}
 Url: https://pagure.io/prunerepo
 
 # Source is created by:
@@ -65,6 +65,9 @@ install -p -m 644 man/prunerepo.1 %{buildroot}/%{_mandir}/man1/
 %{_mandir}/man1/prunerepo.1*
 
 %changelog
+* Mon Jun 05 2023 Pavel Raiskup <praiskup@redhat.com> 1.24-1
+- tests: use --setopt=cachedir=<local-relative-dir>
+
 * Mon Jun 05 2023 Pavel Raiskup <praiskup@redhat.com> 1.23-2
 - using a temporary DNF cache directory, Koji FTBFS and https://github.com/fedora-copr/copr/issues/2756
 
