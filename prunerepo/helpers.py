@@ -12,6 +12,7 @@ import re
 import time
 import shutil
 import logging
+import tempfile
 
 from prunerepo.pair_srpm_rpm import RPMToSRPMPairs
 
@@ -176,6 +177,12 @@ def get_rpms_to_remove(directory, days=0, log=None):
     :raises PrunerepoException: Upon any failure that could provide bad results
         causing unwanted RPM removals.
     """
+
+    with tempfile.TemporaryDirectory(prefix="prunerepo-dnf-cache") as cachedir:
+        return _get_rpms_to_remove_internal(directory, days, log, cachedir)
+
+
+def _get_rpms_to_remove_internal(directory, days, log, cachedir):
     get_all_packages_cmd = [
         "dnf-3",
         "repoquery",
@@ -185,6 +192,7 @@ def get_rpms_to_remove(directory, days=0, log=None):
         "--location",
         "--quiet",
         "--setopt=skip_if_unavailable=False",
+        f"--setopt=cachedir={cachedir}",
     ]
 
     if not log:
