@@ -200,7 +200,7 @@ def _get_rpms_to_remove_internal(directory, days, log, cachedir):
     all_rpms = get_rpms(get_all_packages_cmd, log)
 
     repodir = os.path.abspath(directory)
-    repo_analyzer = PruneRepoAnalyzer(repodir, log)
+    repo_analyzer = PruneRepoAnalyzer(repodir, cachedir, log)
 
     to_remove_rpms = set(all_rpms) - set(latest_rpms)
     rpm_list = []

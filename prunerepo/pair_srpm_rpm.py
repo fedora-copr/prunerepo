@@ -28,12 +28,13 @@ def url_to_repoid(repo_url):
 
 
 @contextmanager
-def initialized_dnf(repo, log):
+def initialized_dnf(repo, cachedir, log):
     """
     Prepare and yield DNF Base object pre-configured to work with the given
     REPO.  Make sure you run this in `with` context.
     """
     base = dnf.Base()
+    base.conf.cachedir = cachedir
     base.read_all_repos()
 
     # disable all pre-configured repos
@@ -59,13 +60,13 @@ def initialized_dnf(repo, log):
         base.close()
 
 
-def _get_mapping(repo, log):
+def _get_mapping(repo, cachedir, log):
     """
     Read the repository metadata and find what RPMs were built from which SRPMs,
     and map the source RPM name to SRPMs and vice versa.
     """
     # query the metadata
-    with initialized_dnf(repo, log) as base:
+    with initialized_dnf(repo, cachedir, log) as base:
         query = base.sack.query()
         remote = query.filter(reponame__neq="@System")
         available_packages = list(remote)
@@ -124,10 +125,11 @@ class PruneRepoAnalyzer:  # pylint: disable=too-few-public-methods
     directory we get in the constructor.
     """
 
-    def __init__(self, repo, log):
+    def __init__(self, repo, cachedir, log):
         self.log = log
         self.repo = repo
-        self.srpm_map, self.rpm_map, self.buildtime_map = _get_mapping(repo, log)
+        self.srpm_map, self.rpm_map, self.buildtime_map = _get_mapping(
+                repo, cachedir, log)
 
     def srpm_to_be_removed_for_rpm(self, rpm):
         """
