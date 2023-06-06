@@ -14,7 +14,7 @@ import shutil
 import logging
 import tempfile
 
-from prunerepo.pair_srpm_rpm import RPMToSRPMPairs
+from prunerepo.pair_srpm_rpm import PruneRepoAnalyzer
 
 
 class PrunerepoException(Exception):
@@ -54,15 +54,6 @@ def run_cmd(cmd, log, dry_run=False):
     if process.returncode != 0:
         raise PrunerepoException("Command {} failed".format(str_cmd))
     return stdout.decode(encoding='utf-8').splitlines()
-
-
-def get_package_build_time(package_path, log):
-    """
-    Get build time by reading package metadata
-    """
-    query_cmd = ["/usr/bin/rpm", "-qp", "--nosignature", "--queryformat", "%{BUILDTIME}"] + [package_path]
-    stdout = run_cmd(query_cmd, log)
-    return int(stdout[0])
 
 
 def get_rpms(repoquery_cmd, log):
@@ -209,18 +200,21 @@ def _get_rpms_to_remove_internal(directory, days, log, cachedir):
     all_rpms = get_rpms(get_all_packages_cmd, log)
 
     repodir = os.path.abspath(directory)
-    pair_lookup = RPMToSRPMPairs(repodir, log)
+    repo_analyzer = PruneRepoAnalyzer(repodir, log)
 
     to_remove_rpms = set(all_rpms) - set(latest_rpms)
     rpm_list = []
+
+    time_now = time.time()
     for rpm in to_remove_rpms:
         log.debug("Checking age of the '%s' file", os.path.split(rpm)[1])
-        if time.time() - get_package_build_time(rpm, log) < days * 24 * 3600:
-            continue
         rel_rpm = os.path.normpath(os.path.relpath(rpm, repodir))
+        if time_now - repo_analyzer.get_build_time(rel_rpm) < days * 24 * 3600:
+            continue
+
         rpm_list.append(rel_rpm)
 
-        rel_srpm = pair_lookup.srpm_to_be_removed_for_rpm(rel_rpm)
+        rel_srpm = repo_analyzer.srpm_to_be_removed_for_rpm(rel_rpm)
         if not rel_srpm:
             continue
         rpm_list.append(rel_srpm)

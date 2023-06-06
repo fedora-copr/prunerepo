@@ -59,7 +59,7 @@ def initialized_dnf(repo, log):
         base.close()
 
 
-def get_mapping(repo, log):
+def _get_mapping(repo, log):
     """
     Read the repository metadata and find what RPMs were built from which SRPMs,
     and map the source RPM name to SRPMs and vice versa.
@@ -73,15 +73,21 @@ def get_mapping(repo, log):
     found_srpms = set()
     map_srpm_to_rpms = {}
     map_rpm_to_srpm = {}
+    map_rpm_to_buildtime = {}
 
     # list all packages
     for package in available_packages:
+        # remove leading ./ etc.
+        normalized_pkg_path = os.path.normpath(package.relativepath)
+
+        map_rpm_to_buildtime[normalized_pkg_path] = package.buildtime
+
         if package.sourcerpm:
             # handling source RPMs only for now
             continue
 
         # handling source RPM
-        found_srpms.add(os.path.normpath(package.relativepath))
+        found_srpms.add(normalized_pkg_path)
 
     # group the binary RPMs
     for package in available_packages:
@@ -108,20 +114,20 @@ def get_mapping(repo, log):
         map_srpm_to_rpms[expected_source_rpm].add(rpm)
         map_rpm_to_srpm[rpm] = expected_source_rpm
 
-    return map_srpm_to_rpms, map_rpm_to_srpm
+    return map_srpm_to_rpms, map_rpm_to_srpm, map_rpm_to_buildtime
 
 
-class RPMToSRPMPairs:  # pylint: disable=too-few-public-methods
+class PruneRepoAnalyzer:  # pylint: disable=too-few-public-methods
     """
-    Search/query MAP of SRPM => RPMS and RPM => SRPM objects.
-    The paths we work with, and return are relative to the "repo" directory we
-    get in the constructor.
+    Search/query MAP of "SRPM => RPMS", "RPM => SRPM", and "(S)RPM =>
+    buildtime".  The paths we work with, and return are relative to the "repo"
+    directory we get in the constructor.
     """
 
     def __init__(self, repo, log):
         self.log = log
         self.repo = repo
-        self.srpm_map, self.rpm_map = get_mapping(repo, log)
+        self.srpm_map, self.rpm_map, self.buildtime_map = _get_mapping(repo, log)
 
     def srpm_to_be_removed_for_rpm(self, rpm):
         """
@@ -149,3 +155,9 @@ class RPMToSRPMPairs:  # pylint: disable=too-few-public-methods
         # Return non-None value, to notify caller that the SRPM should be
         # removed.
         return srpm
+
+    def get_build_time(self, rpm):
+        """
+        Get the BUILDTIME stored in RPM, per previous repository analysis.
+        """
+        return self.buildtime_map[rpm]
