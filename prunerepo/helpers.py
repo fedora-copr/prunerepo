@@ -175,9 +175,9 @@ def get_rpms_to_remove(directory, days=0, log=None):
 
 def _get_rpms_to_remove_internal(directory, days, log, cachedir):
     get_all_packages_cmd = [
-        "dnf-3",
+        "dnf",
         "repoquery",
-        "--repofrompath=prunerepo_query," + os.path.abspath(directory),
+        "--repofrompath=prunerepo_query,file://" + os.path.abspath(directory),
         "--repo=prunerepo_query",
         "--refresh",
         "--location",
