@@ -28,10 +28,10 @@ def url_to_repoid(repo_url):
 
 
 @contextmanager
-def initialized_dnf(repo, cachedir, log):
+def _get_dnf_query(repo, cachedir, log):
     """
-    Prepare and yield DNF Base object pre-configured to work with the given
-    REPO.  Make sure you run this in `with` context.
+    Prepare and yield a prepared DNF4 query object pre-configured to work with
+    the given REPO.  Make sure you run this in `with` context.
     """
     base = dnf.Base()
     base.conf.cachedir = cachedir
@@ -55,7 +55,9 @@ def initialized_dnf(repo, cachedir, log):
     # read the metadata
     base.fill_sack()
     try:
-        yield base
+        query = base.sack.query()
+        remote = query.filter(reponame__neq="@System")
+        yield remote
     finally:
         base.close()
 
@@ -65,12 +67,12 @@ def _get_mapping(repo, cachedir, log):
     Read the repository metadata and find what RPMs were built from which SRPMs,
     and map the source RPM name to SRPMs and vice versa.
     """
-    # query the metadata
-    with initialized_dnf(repo, cachedir, log) as base:
-        query = base.sack.query()
-        remote = query.filter(reponame__neq="@System")
-        available_packages = list(remote)
+    with _get_dnf_query(repo, cachedir, log) as query:
+        available_packages = list(query)
+        return _available_pkgs_to_mapping(available_packages, log)
 
+
+def _available_pkgs_to_mapping(available_packages, log):
     found_srpms = set()
     map_srpm_to_rpms = {}
     map_rpm_to_srpm = {}
@@ -79,7 +81,7 @@ def _get_mapping(repo, cachedir, log):
     # list all packages
     for package in available_packages:
         # remove leading ./ etc.
-        normalized_pkg_path = os.path.normpath(package.relativepath)
+        normalized_pkg_path = os.path.normpath(package.location)
 
         map_rpm_to_buildtime[normalized_pkg_path] = package.buildtime
 
@@ -95,23 +97,23 @@ def _get_mapping(repo, cachedir, log):
         if not package.sourcerpm:
             continue  # only binary RPMs now..
 
-        dirname = os.path.dirname(os.path.normpath(package.relativepath))
+        dirname = os.path.dirname(os.path.normpath(package.location))
         expected_source_rpm = os.path.normpath(
                 os.path.join(dirname, package.sourcerpm))
 
         if not expected_source_rpm:
-            log.error("%s has no SRPM header", package.relativepath)
+            log.error("%s has no SRPM header", package.location)
             continue
 
         if expected_source_rpm not in found_srpms:
             log.error("%s has no source RPM in the directory",
-                      package.relativepath)
+                      package.location)
             continue
 
         if not expected_source_rpm in map_srpm_to_rpms:
             map_srpm_to_rpms[expected_source_rpm] = set()
 
-        rpm = os.path.normpath(package.relativepath)
+        rpm = os.path.normpath(package.location)
         map_srpm_to_rpms[expected_source_rpm].add(rpm)
         map_rpm_to_srpm[rpm] = expected_source_rpm
 
