@@ -4,6 +4,13 @@ Summary: Remove old packages from rpm-md repository
 Release: 1%{?dist}
 Url: https://pagure.io/prunerepo
 
+
+%if 0%{?rhel} > 10 || 0%{?fedora} > 40
+%bcond_without dnf5
+%else
+%bcond_with dnf5
+%endif
+
 # Source is created by:
 # git clone %%url && cd prunerepo
 # tito build --tgz --tag %%name-%%version-%%release
@@ -18,11 +25,20 @@ BuildRequires: python3-rpm
 BuildRequires: createrepo_c
 BuildRequires: asciidoc
 BuildRequires: findutils
-BuildRequires: python3-dnf
+%if %{with dnf5}
+BuildRequires: dnf5-command(repoquery)
+BuildRequires: python3-libdnf5
+Requires: dnf5-command(repoquery)
+%else
+BuildRequires: dnf-command(repoquery)
 BuildRequires: dnf-plugins-core
+Requires: dnf-command(repoquery)
+# F40 needs this explicit requirement
+Requires: /usr/bin/dnf
+BuildRequires: /usr/bin/dnf
+%endif
 BuildRequires: coreutils
 Requires: createrepo_c
-Requires: dnf-plugins-core
 Requires: python3-rpm
 Requires: python3
 
