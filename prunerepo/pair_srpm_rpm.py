@@ -12,7 +12,15 @@ import re
 import os
 from contextlib import contextmanager
 
-import dnf
+
+try:
+    import libdnf5
+    DNF5_USED = True
+except ImportError:
+    # We can not import both, if we do - dnf query mechanism behaves
+    # differently.
+    DNF5_USED = False
+    import dnf
 
 
 def url_to_repoid(repo_url):
@@ -26,6 +34,29 @@ def url_to_repoid(repo_url):
     repo_url = re.sub("(_*$)|^_*", '', repo_url)
     return repo_url
 
+
+@contextmanager
+def _get_dnf5_query(repo, cachedir, log):
+    """
+    Prepare and yield a prepared DNF5 query object pre-configured to work with
+    the given REPO.  Make sure you run this in `with` context.
+    """
+    base = libdnf5.base.Base()
+    base_config = base.get_config()
+    base_config.plugins = False
+    base_config.cachedir = cachedir
+    base.load_config()
+    base.setup()
+
+    repo_sack = base.get_repo_sack()
+    repo_obj = repo_sack.create_repo(url_to_repoid(repo))
+    repo_obj.get_config().baseurl = repo
+    repo_sack.load_repos(libdnf5.repo.Repo.Type_AVAILABLE)
+    query = libdnf5.rpm.PackageQuery(base)
+    try:
+        yield query
+    finally:
+        pass
 
 @contextmanager
 def _get_dnf_query(repo, cachedir, log):
@@ -67,9 +98,28 @@ def _get_mapping(repo, cachedir, log):
     Read the repository metadata and find what RPMs were built from which SRPMs,
     and map the source RPM name to SRPMs and vice versa.
     """
-    with _get_dnf_query(repo, cachedir, log) as query:
-        available_packages = list(query)
+    get_query = _get_dnf5_query if DNF5_USED else _get_dnf_query
+    with get_query(repo, cachedir, log) as query:
+        available_packages = [_Pkg(p) for p in query]
         return _available_pkgs_to_mapping(available_packages, log)
+
+
+class _Pkg:
+    """
+    Make the Package backward compatible with DNF4.  Remove once we have no
+    DNF4 support (RHEL11+).
+    """
+    def __init__(self, pkg):
+        self.pkg = pkg
+    def __getattr__(self, attr):
+        try:
+            return getattr(self.pkg, attr)
+        except AttributeError:
+            if attr == "get_build_time":
+                # get_build_time() was buildtime in DNF4
+                return lambda: self.pkg.buildtime
+            attr = attr[4:]
+            return lambda: getattr(self.pkg, attr)
 
 
 def _available_pkgs_to_mapping(available_packages, log):
@@ -81,11 +131,11 @@ def _available_pkgs_to_mapping(available_packages, log):
     # list all packages
     for package in available_packages:
         # remove leading ./ etc.
-        normalized_pkg_path = os.path.normpath(package.location)
+        normalized_pkg_path = os.path.normpath(package.get_location())
 
-        map_rpm_to_buildtime[normalized_pkg_path] = package.buildtime
+        map_rpm_to_buildtime[normalized_pkg_path] = package.get_build_time()
 
-        if package.sourcerpm:
+        if package.get_sourcerpm():
             # handling source RPMs only for now
             continue
 
@@ -94,26 +144,26 @@ def _available_pkgs_to_mapping(available_packages, log):
 
     # group the binary RPMs
     for package in available_packages:
-        if not package.sourcerpm:
+        if not package.get_sourcerpm():
             continue  # only binary RPMs now..
 
-        dirname = os.path.dirname(os.path.normpath(package.location))
+        dirname = os.path.dirname(os.path.normpath(package.get_location()))
         expected_source_rpm = os.path.normpath(
-                os.path.join(dirname, package.sourcerpm))
+                os.path.join(dirname, package.get_sourcerpm()))
 
         if not expected_source_rpm:
-            log.error("%s has no SRPM header", package.location)
+            log.error("%s has no SRPM header", package.get_location())
             continue
 
         if expected_source_rpm not in found_srpms:
             log.error("%s has no source RPM in the directory",
-                      package.location)
+                      package.get_location())
             continue
 
         if not expected_source_rpm in map_srpm_to_rpms:
             map_srpm_to_rpms[expected_source_rpm] = set()
 
-        rpm = os.path.normpath(package.location)
+        rpm = os.path.normpath(package.get_location())
         map_srpm_to_rpms[expected_source_rpm].add(rpm)
         map_rpm_to_srpm[rpm] = expected_source_rpm
 
