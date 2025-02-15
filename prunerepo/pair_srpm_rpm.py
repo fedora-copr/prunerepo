@@ -147,7 +147,7 @@ class PruneRepoAnalyzer:  # pylint: disable=too-few-public-methods
             return None
 
         srpm = self.rpm_map[rpm]
-        self.log.debug("removing %f from set of RPMs in %s", rpm, srpm)
+        self.log.debug("removing %s from set of RPMs in %s", rpm, srpm)
 
         # Drop the reference to RPM, as it is being removed.
         self.srpm_map[srpm].remove(rpm)
