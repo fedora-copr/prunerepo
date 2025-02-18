@@ -1,5 +1,5 @@
 Name:    prunerepo
-Version: 1.25
+Version: 1.26
 Summary: Remove old packages from rpm-md repository
 Release: 1%{?dist}
 Url: https://pagure.io/prunerepo
@@ -81,6 +81,11 @@ install -p -m 644 man/prunerepo.1 %{buildroot}/%{_mandir}/man1/
 %{_mandir}/man1/prunerepo.1*
 
 %changelog
+* Tue Feb 18 2025 Pavel Raiskup <praiskup@redhat.com> 1.26-1
+- dnf5 compat: Use file:// in baseurls explicitly
+- pair_srpm_rpm: migrate to DNF5, keep DNF4 backward compat
+- pair_srpm_rpm: use a correct specifier for logging strings
+
 * Tue Jun 06 2023 Pavel Raiskup <praiskup@redhat.com> 1.25-1
 - PruneRepoAnalyzer to use the temporary cachedir, too
 - Read BUILDTIME from the repo metadata, rather than every single RPM file
