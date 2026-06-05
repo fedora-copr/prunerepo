@@ -2,7 +2,7 @@ Name:    prunerepo
 Version: 1.26
 Summary: Remove old packages from rpm-md repository
 Release: 1%{?dist}
-Url: https://pagure.io/prunerepo
+Url: https://github.com/fedora-copr/prunerepo
 
 
 %if 0%{?rhel} > 10 || 0%{?fedora} > 40
