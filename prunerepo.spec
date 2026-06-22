@@ -20,7 +20,9 @@ License: GPL-2.0-or-later
 BuildArch: noarch
 BuildRequires: bash
 BuildRequires: python3-devel
+%if 0%{?rhel} && 0%{?rhel} <= 10
 BuildRequires: python3-setuptools
+%endif
 BuildRequires: python3-rpm
 BuildRequires: createrepo_c
 BuildRequires: asciidoc
@@ -59,24 +61,44 @@ to recreate the repository metadata.
 
 %prep
 %setup -q
+%if 0%{?rhel} && 0%{?rhel} <= 10
+rm -f pyproject.toml
+%endif
 
 %check
 tests/run.sh
 
+%if 0%{?fedora}
+%generate_buildrequires
+%pyproject_buildrequires
+%endif
+
 %build
+%if 0%{?fedora}
+%pyproject_wheel
+%else
 name="%{name}" version="%{version}" summary="%{summary}" %py3_build
+%endif
 a2x -d manpage -f manpage man/prunerepo.1.asciidoc
 
 %install
+%if 0%{?fedora}
+%pyproject_install
+%pyproject_save_files -l prunerepo
+%else
 name="%{name}" version="%{version}" summary="%{summary}" %py3_install
+%endif
 
 install -d %{buildroot}%{_mandir}/man1
 install -p -m 644 man/prunerepo.1 %{buildroot}/%{_mandir}/man1/
 
+%if 0%{?fedora}
+%files -f %{pyproject_files}
+%else
 %files
 %license LICENSE
-
 %{python3_sitelib}/*
+%endif
 %{_bindir}/prunerepo
 %{_mandir}/man1/prunerepo.1*
 

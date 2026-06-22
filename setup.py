@@ -1,4 +1,6 @@
 #!/usr/bin/python3
+# This file is used only for EPEL 10 (and older) compatibility.
+# Fedora builds use pyproject.toml with %pyproject_* macros.
 
 import os
 
