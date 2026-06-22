@@ -1,0 +1,27 @@
+---
+# This file is taken from Tito project itself.
+srpm_build_deps:
+  - tito
+  - git
+
+actions:
+  create-archive:
+    - bash -c "tito build --tgz --test -o ."
+    - bash -c "ls -1t ./*.tar.gz | head -n 1"
+  get-current-version:
+    - bash -c "grep ^Version prunerepo.spec | awk '{ print $2 }'"
+
+jobs:
+  - &copr
+    job: copr_build
+    trigger: pull_request
+    targets:
+      - fedora-all
+      - epel-9-x86_64
+      - epel-10-x86_64
+
+  - <<: *copr
+    trigger: commit
+    owner: "@copr"
+    project: "prunerepo-git"
+    branch: main
