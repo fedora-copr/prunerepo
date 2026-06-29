@@ -1,5 +1,5 @@
 Name:    prunerepo
-Version: 1.26
+Version: 1.27
 Summary: Remove old packages from rpm-md repository
 Release: 1%{?dist}
 Url: https://github.com/fedora-copr/prunerepo
@@ -103,6 +103,10 @@ install -p -m 644 man/prunerepo.1 %{buildroot}/%{_mandir}/man1/
 %{_mandir}/man1/prunerepo.1*
 
 %changelog
+* Mon Jun 29 2026 Miroslav Suchý <msuchy@redhat.com> 1.27-1
+- Migrate from deprecated %%py3_build/%%py3_install to pyproject macros
+- update url
+
 * Tue Feb 18 2025 Pavel Raiskup <praiskup@redhat.com> 1.26-1
 - dnf5 compat: Use file:// in baseurls explicitly
 - pair_srpm_rpm: migrate to DNF5, keep DNF4 backward compat
