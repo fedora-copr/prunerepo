@@ -17,6 +17,7 @@ jobs:
     trigger: pull_request
     targets:
       - fedora-all
+      - fedora-eln
       - epel-9-x86_64
       - epel-10-x86_64
 
